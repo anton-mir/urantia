@@ -10,7 +10,7 @@ PROMPT_DELAY_SEC = 12
 options = ChromeOptions()
 options.debugger_address = "127.0.0.1:" + "8888"
 options.add_argument("start-maximized")
-driver_path = "/home/amiroshn/chromedriver/"
+driver_path = "/home/{user}/chromedriver/"
 
 browser = webdriver.Chrome(
     service=Service("/usr/bin/chromedriver"), options=options

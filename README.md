@@ -35,7 +35,10 @@ $ google-chrome --remote-debugging-port=8888 --user-data-dir=/home/{user}/chrome
 ```
 10. In the newly opened Chrome window go to https://chat.openai.com/chat and log in
 
-10. In the new terminal window run:
+11. Update _FILENAME_PREFIX_ to match with input file name in the _run_translation.py_ script
+like FILENAME_PREFIX = "Doc2" means "Doc2_eng.txt" as input
+
+12. In the new terminal window run:
 ```
 $ python3 run_translation.py
 ```

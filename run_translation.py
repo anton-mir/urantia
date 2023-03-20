@@ -13,7 +13,8 @@ import time
 import re
 from datetime import timedelta
 
-FILE_U = open("Doc1_eng.txt", "r")
+FILENAME_PREFIX = "Doc2"
+FILE_U = open(f"{FILENAME_PREFIX}_eng.txt", "r")
 LINES = FILE_U.readlines()
 PROMPT_DELAY_SEC = 12
 REPLY_DELAY_SEC = 180
@@ -103,7 +104,7 @@ def process_line(line, request_counter):
     responses = browser.find_elements(By.XPATH, "//p[1]")
     print("Request ", request_counter, ":\n", responses[-2].text)
 
-    with open("Doc1_ukr.txt", "a") as f:
+    with open(f"{FILENAME_PREFIX}_ukr.txt", "a") as f:
         f.write(responses[-2].text)
         f.write("\n")
 

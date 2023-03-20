@@ -54,7 +54,7 @@ def process_line(line, request_counter):
 
     if (
         len(response_request_limit) >= 1
-        or request_counter >= MAX_REQUESTS_PER_HOUR
+        and request_counter >= MAX_REQUESTS_PER_HOUR
     ):
         time_to_wake = REQUEST_EXCESS_TIME_SEC - (time.time() - start_time)
 

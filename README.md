@@ -4,13 +4,15 @@ Ukrainian Translation of The Urantia Book
 
 Scripts to translate The Urantia Book with Chat GPT
 
-1. Create ChatGPT4 session with Plus account and save the link to it
+0. Get OpenAI Plus account
+
+1. Create here https://chat.openai.com/chat Model GPT-4 session with and save the direct link to it
 
 2. Insert link to script as _LINK_TO_CHAT_THREAD_
 
-3. Prepare _Doc1_eng.txt_ with lines to be translated
+3. Prepare _Doc1_eng.txt_ with lines to be translated, one paragraph per line
 
-4. Install selenium:
+4. Install selenium and maybe other dependencies:
 
 ```
 $ pip3 install selenium
@@ -31,5 +33,9 @@ $ source ~/.bash_profile
 ```
 $ google-chrome --remote-debugging-port=8888 --user-data-dir=/home/{user}/chromedriver/
 ```
-10. In other terminal run:
+10. In the newly opened Chrome window go to https://chat.openai.com/chat and log in
+
+10. In the new terminal window run:
+```
 $ python3 run_translation.py
+```

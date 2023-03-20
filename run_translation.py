@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
 
 import time
+import re
 from datetime import timedelta
 
 FILE_U = open("Doc1_eng.txt", "r")
@@ -19,9 +20,7 @@ REPLY_DELAY_SEC = 180
 MAX_REQUESTS_PER_HOUR = 25
 REQUEST_EXCESS_TIME_SEC = 3 * 60 * 60 + 60  # 3 hours + 1 minute
 DRIVER_PATH = "/usr/bin/chromedriver"
-LINK_TO_CHAT_THREAD = (
-    "https://chat.openai.com/chat/{ID}"
-)
+LINK_TO_CHAT_THREAD = "https://chat.openai.com/chat/{ID}"
 
 start_time = time.time()
 response_request_limit = 0
@@ -29,8 +28,13 @@ response_request_limit = 0
 
 def process_line(line, request_counter):
     global start_time
-    if line == "":
-        return
+    if (
+        line == ""
+        or re.search(r'^Paper [0-9]*', line, flags = 0) # "Paper 2"
+        or re.search(r"^[A-Z ]*$", line, flags=0) # "THE NATURE OF GOD"
+        or re.search(r"^[0-9]*\. ", line, flags=0) # "1. THE INFINITY OF GOD"
+    ):
+        return # Skip such lines
 
     try:
         input_field = browser.find_element(By.XPATH, "//textarea[1]")

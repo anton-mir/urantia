@@ -31,11 +31,11 @@ def process_line(line, request_counter):
     global start_time
     if (
         line == ""
-        or re.search(r'^Paper [0-9]*', line, flags = 0) # "Paper 2"
-        or re.search(r"^[A-Z ]*$", line, flags=0) # "THE NATURE OF GOD"
-        or re.search(r"^[0-9]*\. ", line, flags=0) # "1. THE INFINITY OF GOD"
+        or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
+        or re.search(r"^[A-Z ]*$", line, flags=0)  # "THE NATURE OF GOD"
+        or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
     ):
-        return # Skip such lines
+        return  # Skip such lines
 
     try:
         input_field = browser.find_element(By.XPATH, "//textarea[1]")
@@ -66,6 +66,7 @@ def process_line(line, request_counter):
                 end="\r",
                 flush=True,
             )
+            print("\n")
 
             time.sleep(5)
 
@@ -95,11 +96,12 @@ def process_line(line, request_counter):
     while time.time() - waiting_started < REPLY_DELAY_SEC:
         time.sleep(1)
         print(
-            "Waiting for chat answer "
-            f"{REPLY_DELAY_SEC - (time.time() - waiting_started)}",
+            "Waiting for chat answer %3d"
+            % int(REPLY_DELAY_SEC - (time.time() - waiting_started)),
             end="\r",
             flush=True,
         )
+        print("\n")
 
     responses = browser.find_elements(By.XPATH, "//p[1]")
     print("Request ", request_counter, ":\n", responses[-2].text)

@@ -55,15 +55,15 @@ def wait_chat_reply():
 
 
 def limit_reached_loop():
-    response_request_green = None
     response_request_red = True
-    print(f"\nLimit reached at {time.asctime()}")
+    print(f"\nLimit reached or error at {time.asctime()}")
 
     while response_request_red is not None:
         response_request_red = None
         print("Waiting...", end="\r", flush=True)
         time.sleep(5)
-
+        browser.refresh()
+        time.sleep(5)
         try:
             response_request_red = browser.find_element(
                 By.CSS_SELECTOR, "div[class*='bg-red']"
@@ -71,17 +71,6 @@ def limit_reached_loop():
         except NoSuchElementException:
             print(f"No red limit message, {time.asctime()}")
 
-    try:
-        response_request_green = browser.find_element(
-            By.CSS_SELECTOR, "div[class*='bg-green']"
-        )
-    except NoSuchElementException:
-        print(f"No green message, {time.asctime()}")
-
-    assert (
-        response_request_green is not None
-        and "You previously reached your usage cap" in response_request_green
-    ), "Wrong green message!"
     browser.refresh()
     time.sleep(PROMPT_DELAY_SEC)
 
@@ -93,7 +82,7 @@ def process_line(line, line_index):
     if (
         line == ""
         or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
-        or re.search(r"^[A-Z ]*$", line, flags=0)  # "THE NATURE OF GOD"
+        or re.search(r"^[A-Z ’]*$", line, flags=0)  # "THE NATURE OF GOD"
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
     ):
         print(f"Line {line_index} skip")

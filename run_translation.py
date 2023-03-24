@@ -58,8 +58,6 @@ def limit_reached_loop():
         response_request_red = None
         print("Waiting...", end="\r", flush=True)
         time.sleep(5)
-        browser.refresh()
-        time.sleep(5)
         try:
             response_request_red = browser.find_element(
                 By.CSS_SELECTOR, "div[class*='bg-red']"

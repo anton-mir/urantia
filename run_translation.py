@@ -14,23 +14,24 @@ import os
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
+FILENAME_PREFIX = config['filename_prefix']
 LINES = open(
     os.path.join(
-        "./TheUrantiaBook/English", f"{config['filename_prefix']}_eng.txt"
+        "./TheUrantiaBook/English", f"{FILENAME_PREFIX}_eng.txt"
     ),
     "r",
 ).readlines()
-
+PROMPT_DELAY_SEC = config["prompt_delay_sec"]
+REPLY_DELAY_SEC = config["reply_delay_sec"]
 
 def wait_chat_reply():
     start_time = time.time()
     gray_response_field_len_prev = 0
 
-    while time.time() - start_time < config["reply_delay_sec"]:
+    while time.time() - start_time < REPLY_DELAY_SEC:
         time.sleep(2)
         print(
-            "Waiting %3d..."
-            % int(config["reply_delay_sec"] - (time.time() - start_time)),
+            "Waiting %3d..." % (REPLY_DELAY_SEC - (time.time() - start_time)),
             end="\r",
             flush=True,
         )
@@ -66,7 +67,7 @@ def limit_reached_loop():
             print(f"No red limit message, {time.asctime()}")
 
     browser.refresh()
-    time.sleep(config["prompt_delay_sec"])
+    time.sleep(PROMPT_DELAY_SEC)
 
 
 def process_line(line, line_index):
@@ -78,23 +79,24 @@ def process_line(line, line_index):
         or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
         or re.search(r"^[A-Z ’]*$", line, flags=0)  # "THE NATURE OF GOD"
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
+        or re.search(r"^-.*$", line, flags=0)  # "-------"
     ):
         print(f"Line {line_index} skip")
         return  # Skip such lines
 
     browser.refresh()
-    time.sleep(config["prompt_delay_sec"])
+    time.sleep(PROMPT_DELAY_SEC)
 
     try:
         input_field = browser.find_element(By.XPATH, "//textarea[1]")
         input_field.send_keys(f"{line.strip()}")
         input_field.send_keys(Keys.RETURN)
         print(f"New line {line_index} sent at start")
-        time.sleep(config["prompt_delay_sec"])
+        time.sleep(PROMPT_DELAY_SEC)
     except NoSuchElementException:
         print(f"No input field at end, {time.asctime()}")
         browser.refresh()
-        time.sleep(config["prompt_delay_sec"])
+        time.sleep(PROMPT_DELAY_SEC)
 
     try:
         response_request_red = browser.find_element(
@@ -112,7 +114,7 @@ def process_line(line, line_index):
             input_field.send_keys(f"{line.strip()}")
             input_field.send_keys(Keys.RETURN)
             print(f"New line {line_index} sent at end")
-            time.sleep(config["prompt_delay_sec"])
+            time.sleep(PROMPT_DELAY_SEC)
         except NoSuchElementException:
             print(f"No input field at end, {time.asctime()}")
 
@@ -125,7 +127,7 @@ def process_line(line, line_index):
 
     with open(
         os.path.join(
-            "./TheUrantiaBook/Ukrainian", f"{config['filename_prefix']}_ukr.txt"
+            "./TheUrantiaBook/Ukrainian", f"{FILENAME_PREFIX}_ukr.txt"
         ),
         "a",
     ) as f:
@@ -159,7 +161,7 @@ if __name__ == "__main__":
     )
     browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
 
-    time.sleep(config["prompt_delay_sec"])
+    time.sleep(PROMPT_DELAY_SEC)
 
     assert start_line_index >= 1 and start_line_index <= len(
         LINES
@@ -171,7 +173,7 @@ if __name__ == "__main__":
             input_field.send_keys(f"{config['initial_request_text']}")
             input_field.send_keys(Keys.RETURN)
             print(f"Request for translation sent at {time.asctime()}")
-            time.sleep(config["prompt_delay_sec"])
+            time.sleep(PROMPT_DELAY_SEC*2)
         except NoSuchElementException:
             print(f"No input field!, {time.asctime()}")
             exit()
@@ -197,7 +199,7 @@ if __name__ == "__main__":
         # Save last processed line to config
         config["last_processed_line"] = line_index
         with open(f"config.yaml", "w") as f:
-            config = yaml.dump(
+            yaml.dump(
                 config, stream=f, default_flow_style=False, sort_keys=False
             )
     print("End!")

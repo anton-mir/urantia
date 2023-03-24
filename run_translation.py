@@ -9,12 +9,16 @@ import time
 import re
 import sys
 import yaml
+import os
 
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 LINES = open(
-    f"TheUrantiaBook/English/{config['filename_prefix']}_eng.txt", "r"
+    os.path.join(
+        "./TheUrantiaBook/English", f"{config['filename_prefix']}_eng.txt"
+    ),
+    "r",
 ).readlines()
 
 
@@ -121,7 +125,12 @@ def process_line(line, line_index):
     answer = responses[-2].text.strip()
     print(f"Line {line_index}/{len(LINES)}:\n{answer}")
 
-    with open(f"TheUrantiaBook/Ukrainian/{FILENAME_PREFIX}_ukr.txt", "a") as f:
+    with open(
+        os.path.join(
+            "./TheUrantiaBook/Ukrainian", f"{config['filename_prefix']}_ukr.txt"
+        ),
+        "a",
+    ) as f:
         f.write(answer)
         f.write("\n")
 

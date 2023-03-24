@@ -1,7 +1,3 @@
-"""
-Run translation line-by-line from DocX_eng.txt to DocX_ukr.txt
-"""
-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -12,29 +8,25 @@ from selenium.common.exceptions import NoSuchElementException
 import time
 import re
 import sys
+import yaml
 
-CHAT_ID = "ID" # Copy from the link to GPT-4 chat
-FILENAME_PREFIX = "DocX"
-FILE_U = open(f"{FILENAME_PREFIX}_eng.txt", "r")
-LINES = FILE_U.readlines()
-PROMPT_DELAY_SEC = 12
-REPLY_DELAY_SEC = 180
-DRIVER_PATH = "/usr/bin/chromedriver"
-LINK_TO_CHAT_THREAD = f"https://chat.openai.com/chat/{CHAT_ID}"
-INITIAL_REQUEST_TEXT = "Translate all the following requests at this \
-chat from the English to Ukrainian language as professional translator \
-keeping the numbers at the beginning."
+with open("config.yaml") as f:
+    config = yaml.load(f, Loader=yaml.FullLoader)
+
+LINES = open(
+    f"TheUrantiaBook/English/{config['filename_prefix']}_eng.txt", "r"
+).readlines()
 
 
 def wait_chat_reply():
     start_time = time.time()
-    gray_responce_field_len_prev = 0
+    gray_response_field_len_prev = 0
 
-    while time.time() - start_time < REPLY_DELAY_SEC:
+    while time.time() - start_time < config["reply_delay_sec"]:
         time.sleep(2)
         print(
             "Waiting %3d..."
-            % int(REPLY_DELAY_SEC - (time.time() - start_time)),
+            % int(config["reply_delay_sec"] - (time.time() - start_time)),
             end="\r",
             flush=True,
         )
@@ -42,10 +34,10 @@ def wait_chat_reply():
             response_requests_gray = browser.find_elements(By.TAG_NAME, "p")
         except NoSuchElementException:
             print(f"No answer messages, {time.asctime()}")
-        # End when chat responce complete
-        if gray_responce_field_len_prev == len(response_requests_gray[-2].text):
-          break
-        gray_responce_field_len_prev = len(response_requests_gray[-2].text)
+        # End when chat response complete
+        if gray_response_field_len_prev == len(response_requests_gray[-2].text):
+            break
+        gray_response_field_len_prev = len(response_requests_gray[-2].text)
 
     print(
         "               ",
@@ -72,7 +64,7 @@ def limit_reached_loop():
             print(f"No red limit message, {time.asctime()}")
 
     browser.refresh()
-    time.sleep(PROMPT_DELAY_SEC)
+    time.sleep(config["prompt_delay_sec"])
 
 
 def process_line(line, line_index):
@@ -89,18 +81,18 @@ def process_line(line, line_index):
         return  # Skip such lines
 
     browser.refresh()
-    time.sleep(PROMPT_DELAY_SEC)
+    time.sleep(config["prompt_delay_sec"])
 
     try:
         input_field = browser.find_element(By.XPATH, "//textarea[1]")
         input_field.send_keys(f"{line.strip()}")
         input_field.send_keys(Keys.RETURN)
         print(f"New line {line_index} sent at start")
-        time.sleep(PROMPT_DELAY_SEC)
+        time.sleep(config["prompt_delay_sec"])
     except NoSuchElementException:
         print(f"No input field at end, {time.asctime()}")
         browser.refresh()
-        time.sleep(PROMPT_DELAY_SEC)
+        time.sleep(config["prompt_delay_sec"])
 
     try:
         response_request_red = browser.find_element(
@@ -118,7 +110,7 @@ def process_line(line, line_index):
             input_field.send_keys(f"{line.strip()}")
             input_field.send_keys(Keys.RETURN)
             print(f"New line {line_index} sent at end")
-            time.sleep(PROMPT_DELAY_SEC)
+            time.sleep(config["prompt_delay_sec"])
         except NoSuchElementException:
             print(f"No input field at end, {time.asctime()}")
 
@@ -129,34 +121,38 @@ def process_line(line, line_index):
     answer = responses[-2].text.strip()
     print(f"Line {line_index}/{len(LINES)}:\n{answer}")
 
-    with open(f"{FILENAME_PREFIX}_ukr.txt", "a") as f:
+    with open(f"TheUrantiaBook/Ukrainian/{FILENAME_PREFIX}_ukr.txt", "a") as f:
         f.write(answer)
         f.write("\n")
 
 
 if __name__ == "__main__":
-    # Read last processed line from file
-    line_config = open(f"line.conf", "r")
-    last_processed_line_config = line_config.readline()
-
     # Get start line number as first command line argument
     if len(sys.argv) == 2:
         start_line_index = int(sys.argv[1])
         print(f"Command line argument: start from line {start_line_index}")
-    elif last_processed_line_config != "":
-        start_line_index = int(last_processed_line_config) + 1
+    elif config["last_processed_line"] > 0 and config[
+        "last_processed_line"
+    ] < len(LINES):
+        start_line_index = config["last_processed_line"] + 1
         print(
-            f"Config with previously processed line: start from line {start_line_index}"
+            "Config with previously processed line: start "
+            f"from line {start_line_index}"
         )
+    else:
+        start_line_index = 1
+        print(f"Start by default from line {start_line_index}")
 
     options = ChromeOptions()
     options.debugger_address = "127.0.0.1:" + "8888"
     options.add_argument("start-maximized")
 
-    browser = webdriver.Chrome(service=Service(DRIVER_PATH), options=options)
-    browser.get(LINK_TO_CHAT_THREAD)
+    browser = webdriver.Chrome(
+        service=Service(config["driver_path"]), options=options
+    )
+    browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
 
-    time.sleep(PROMPT_DELAY_SEC)
+    time.sleep(config["prompt_delay_sec"])
 
     assert start_line_index >= 1 and start_line_index <= len(
         LINES
@@ -165,10 +161,10 @@ if __name__ == "__main__":
     if start_line_index == 1:
         try:
             input_field = browser.find_element(By.XPATH, "//textarea[1]")
-            input_field.send_keys(f"{INITIAL_REQUEST_TEXT}")
+            input_field.send_keys(f"{config['initial_request_text']}")
             input_field.send_keys(Keys.RETURN)
             print(f"Request for translation sent at {time.asctime()}")
-            time.sleep(PROMPT_DELAY_SEC)
+            time.sleep(config["prompt_delay_sec"])
         except NoSuchElementException:
             print(f"No input field!, {time.asctime()}")
             exit()
@@ -189,10 +185,13 @@ if __name__ == "__main__":
         f"{time.asctime()}: Starting translation. {len(LINES)} lines in file."
         f" Start from {start_line_index} line."
     )
-    for line_index in range(start_line_index, len(LINES) - 1):
+    for line_index in range(start_line_index, len(LINES) + 1):
         process_line(LINES[line_index - 1], line_index)
-        # Save last processed line
-        with open(f"line.conf", "w") as f:
-            f.write(str(line_index))
-
+        # Save last processed line to config
+        config["last_processed_line"] = line_index
+        with open(f"config.yaml", "w") as f:
+            config = yaml.dump(
+                config, stream=f, default_flow_style=False, sort_keys=False
+            )
+    print("End!")
     browser.quit()

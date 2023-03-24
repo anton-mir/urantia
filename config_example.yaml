@@ -1,0 +1,10 @@
+last_processed_line: 1
+chat_id: 12345678-1234-1234-1234-123456789012
+filename_prefix: doc0
+prompt_delay_sec: 12
+reply_delay_sec: 180
+driver_path: /usr/bin/chromedriver
+initial_request_text: >
+  Translate all the following requests at this
+  chat from the english to ukrainian language as professional translator
+  keeping the numbers at the beginning.

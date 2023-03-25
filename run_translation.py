@@ -23,6 +23,7 @@ LINES = open(
 ).readlines()
 PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
+INITIAL_REQUEST_TEXT = config['initial_request_text']
 
 def wait_chat_reply():
     start_time = time.time()
@@ -51,29 +52,45 @@ def wait_chat_reply():
     )
 
 
+def send_chat_request(request, exit_on_fail = False):
+    try:
+        input_field = browser.find_element(By.XPATH, "//textarea[1]")
+        input_field.send_keys(request)
+        input_field.send_keys(Keys.RETURN)
+        print(f"Request sent, {time.asctime()}")
+        time.sleep(PROMPT_DELAY_SEC)
+    except NoSuchElementException:
+        print(f"No input field, {time.asctime()}")
+        if exit_on_fail:
+          exit()
+        else:
+          browser.refresh()
+          time.sleep(PROMPT_DELAY_SEC)
+
+def find_red_field():
+    response_request_red = None
+    try:
+        response_request_red = browser.find_element(
+            By.CSS_SELECTOR, "div[class*='bg-red']"
+        )
+    except NoSuchElementException:
+        print(f"No red limit message, {time.asctime()}")
+    return response_request_red
+
 def limit_reached_loop():
     response_request_red = True
     print(f"\nLimit reached or error at {time.asctime()}")
 
     while response_request_red is not None:
-        response_request_red = None
         print("Waiting...", end="\r", flush=True)
         time.sleep(5)
-        try:
-            response_request_red = browser.find_element(
-                By.CSS_SELECTOR, "div[class*='bg-red']"
-            )
-        except NoSuchElementException:
-            print(f"No red limit message, {time.asctime()}")
+        response_request_red = find_red_field()
 
     browser.refresh()
     time.sleep(PROMPT_DELAY_SEC)
 
 
 def process_line(line, line_index):
-    response_request_red = None
-    input_field = None
-
     if (
         line == ""
         or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
@@ -84,39 +101,24 @@ def process_line(line, line_index):
         print(f"Line {line_index} skip")
         return  # Skip such lines
 
+    elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
+        print("New document translation start")
+        send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+        response_request_red = find_red_field()
+        if response_request_red is not None:
+            print("Limit reached at the start of the Document")
+            limit_reached_loop()
+            send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+        return # Skip "The Urantia Book" line
+
     browser.refresh()
     time.sleep(PROMPT_DELAY_SEC)
-
-    try:
-        input_field = browser.find_element(By.XPATH, "//textarea[1]")
-        input_field.send_keys(f"{line.strip()}")
-        input_field.send_keys(Keys.RETURN)
-        print(f"New line {line_index} sent at start")
-        time.sleep(PROMPT_DELAY_SEC)
-    except NoSuchElementException:
-        print(f"No input field at end, {time.asctime()}")
-        browser.refresh()
-        time.sleep(PROMPT_DELAY_SEC)
-
-    try:
-        response_request_red = browser.find_element(
-            By.CSS_SELECTOR, "div[class*='bg-red']"
-        )
-    except NoSuchElementException:
-        print(f"No red limit message, {time.asctime()}")
+    send_chat_request(request=line.strip(), exit_on_fail=False)
+    response_request_red = find_red_field()
 
     if response_request_red is not None:
         limit_reached_loop()
-
-        print(f"Starting again at at {time.asctime()}\n")
-        try:
-            input_field = browser.find_element(By.XPATH, "//textarea[1]")
-            input_field.send_keys(f"{line.strip()}")
-            input_field.send_keys(Keys.RETURN)
-            print(f"New line {line_index} sent at end")
-            time.sleep(PROMPT_DELAY_SEC)
-        except NoSuchElementException:
-            print(f"No input field at end, {time.asctime()}")
+        send_chat_request(request=line.strip(), exit_on_fail=False)
 
     print(f"Translation started at {time.asctime()}")
     wait_chat_reply()
@@ -168,27 +170,12 @@ if __name__ == "__main__":
     ), "Wrong start line"
 
     if start_line_index == 1:
-        try:
-            input_field = browser.find_element(By.XPATH, "//textarea[1]")
-            input_field.send_keys(f"{config['initial_request_text']}")
-            input_field.send_keys(Keys.RETURN)
-            print(f"Request for translation sent at {time.asctime()}")
-            time.sleep(PROMPT_DELAY_SEC*2)
-        except NoSuchElementException:
-            print(f"No input field!, {time.asctime()}")
-            exit()
-
-        response_request_red = None
-
-        try:
-            response_request_red = browser.find_element(
-                By.CSS_SELECTOR, "div[class*='bg-red']"
-            )
-        except NoSuchElementException:
-            print(f"No red limit message, {time.asctime()}")
-
+        send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+        response_request_red = find_red_field()
         if response_request_red is not None:
+            print("Limit reached at the start")
             limit_reached_loop()
+            send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
 
     print(
         f"{time.asctime()}: Starting translation. {len(LINES)} lines in file."

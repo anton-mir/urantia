@@ -139,7 +139,7 @@ def process_line(line, line_index):
 
 if __name__ == "__main__":
     # Get start line number as first command line argument
-    if len(sys.argv) == 2:
+    if len(sys.argv) > 1:
         start_line_index = int(sys.argv[1])
         print(f"Command line argument: start from line {start_line_index}")
     elif config["last_processed_line"] > 0 and config[
@@ -169,7 +169,8 @@ if __name__ == "__main__":
         LINES
     ), "Wrong start line"
 
-    if start_line_index == 1:
+    if len(sys.argv) == 3 and sys.argv[2] == "True":
+        print("Start with request to translate to Ukrainian")
         send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
         response_request_red = find_red_field()
         if response_request_red is not None:

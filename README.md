@@ -1,6 +1,8 @@
-# Urantia Ukraine
+# Urantia Book for Ukraine
 
-Ukrainian Translation of The Urantia Book
+![alt text](https://avatars.githubusercontent.com/u/8962479?s=400&u=c10ade6e3ff453fe8404edfd097a0a1c19d5a075&v=4)
+
+# Ukrainian Translation of The Urantia Book
 
 Scripts to translate The Urantia Book with Chat GPT
 
@@ -8,9 +10,9 @@ Scripts to translate The Urantia Book with Chat GPT
 
 1. Create here https://chat.openai.com/chat Model GPT-4 session with and save the direct link to it
 
-2. Insert link to script as _LINK_TO_CHAT_THREAD_
+2. Insert link to config.yaml, see an example file and rename it to "config.yaml"
 
-3. Prepare _Doc1_eng.txt_ with lines to be translated, one paragraph per line
+3. Prepare for example _Doc1_eng.txt_ with lines to be translated, one paragraph per line, add prefix "Doc1" or other to config
 
 4. Install selenium and maybe other dependencies:
 
@@ -35,10 +37,7 @@ $ google-chrome --remote-debugging-port=8888 --user-data-dir=/home/{user}/chrome
 ```
 10. In the newly opened Chrome window go to https://chat.openai.com/chat and log in
 
-11. Update _FILENAME_PREFIX_ to match with input file name in the _run_translation.py_ script
-like FILENAME_PREFIX = "Doc2" means "Doc2_eng.txt" as input
-
-12. In the new terminal window run:
+11. In the new terminal window run:
 ```
-$ python3 run_translation.py
+$ python3 run_translation.py [line_to_start_number, number] [start_with_initial_request_text, just True or False]
 ```

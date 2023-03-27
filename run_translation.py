@@ -5,6 +5,8 @@ from selenium.webdriver import ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
 
+from langdetect import detect
+
 import time
 import re
 import sys
@@ -125,6 +127,22 @@ def process_line(line, line_index):
 
     responses = browser.find_elements(By.XPATH, "//p[1]")
     answer = responses[-2].text.strip()
+    answer_language = detect(answer)
+
+    while answer_language != 'uk' or answer_language == 'en':
+      print("Wrong answer language! Ask chat again to translate to Ukrainian")
+      send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+      response_request_red = find_red_field()
+
+      if response_request_red is not None:
+          print("Limit reached at the start")
+          limit_reached_loop()
+          send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+
+      responses = browser.find_elements(By.XPATH, "//p[1]")
+      answer = responses[-2].text.strip()
+      answer_language = detect(answer)
+
     print(f"Line {line_index}/{len(LINES)}:\n{answer}")
 
     with open(

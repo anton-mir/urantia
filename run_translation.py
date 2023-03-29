@@ -53,6 +53,24 @@ def wait_chat_reply():
     )
 
 
+def click_green_button():
+    try:
+        green_buttons = browser.find_elements(
+            By.XPATH, '//button[@class="btn relative btn-primary m-auto"]'
+        )
+        if (
+            len(green_buttons) == 1
+            and green_buttons[0].text == "Regenerate response"
+        ):
+            green_buttons[0].send_keys("browser" + Keys.ENTER)
+            wait_chat_reply()
+        else:
+          print("Can't find the exact green button")
+          exit()
+    except NoSuchElementException:
+        print(f"No green button, {time.asctime()}")
+        exit()
+
 def find_red_field():
     response_request_red = None
     try:
@@ -72,22 +90,6 @@ def find_input_field():
         print(f"No input field, {time.asctime()}")
     return input_field
 
-
-def send_chat_request(request, exit_on_fail=False):
-    input_field = find_input_field()
-
-    if input_field is not None:
-        input_field.send_keys(request)
-        input_field.send_keys(Keys.RETURN)
-        print(f"Request sent, {time.asctime()}")
-        time.sleep(PROMPT_DELAY_SEC)
-    elif exit_on_fail:
-        exit()
-    else:
-        browser.refresh()
-        time.sleep(PROMPT_DELAY_SEC)
-
-
 def limit_reached_loop():
     print(f"\nLimit reached or error at {time.asctime()}")
 
@@ -105,17 +107,29 @@ def send_request_for_translation_and_wait_answer(
     while True:
         browser.refresh()
         time.sleep(PROMPT_DELAY_SEC)
-        send_chat_request(
-            request=request_for_translation, exit_on_fail=exit_on_failure
-        )
+        input_field = find_input_field()
 
-        if find_red_field() is not None:
-            limit_reached_loop()
+        if input_field is not None:
+            input_field.send_keys(request_for_translation)
+            input_field.send_keys(Keys.RETURN)
+            print(f"Request sent, {time.asctime()}")
+
+            time.sleep(PROMPT_DELAY_SEC)
+
+            if find_red_field() is not None:
+                limit_reached_loop()
+            else:
+                print(f"Request sent, translation started at {time.asctime()}")
+                wait_chat_reply()
+                responses = browser.find_elements(By.XPATH, "//p[1]")
+                return responses[-2].text.strip()
+
+        elif exit_on_failure:
+            exit()
         else:
-            print(f"Request sent, translation started at {time.asctime()}")
-            wait_chat_reply()
-            responses = browser.find_elements(By.XPATH, "//p[1]")
-            return responses[-2].text.strip()
+            print("No input field found, try search for green button")
+            click_green_button()
+            browser.refresh()
 
 
 def process_line():
@@ -133,12 +147,9 @@ def process_line():
 
     elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
         print("New document translation start")
-        send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
-        response_request_red = find_red_field()
-        if response_request_red is not None:
-            print("Limit reached at the start of the Document")
-            limit_reached_loop()
-            send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+        send_request_for_translation_and_wait_answer(
+            line.strip(), exit_on_failure=True
+        )
         return  # Skip "The Urantia Book" line
 
     same_answer_counter = 0

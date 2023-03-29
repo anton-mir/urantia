@@ -16,16 +16,15 @@ import os
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
-FILENAME_PREFIX = config['filename_prefix']
+FILENAME_PREFIX = config["filename_prefix"]
 LINES = open(
-    os.path.join(
-        "./TheUrantiaBook/English", f"{FILENAME_PREFIX}_eng.txt"
-    ),
+    os.path.join("./TheUrantiaBook/English", f"{FILENAME_PREFIX}_eng.txt"),
     "r",
 ).readlines()
 PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
-INITIAL_REQUEST_TEXT = config['initial_request_text']
+INITIAL_REQUEST_TEXT = config["initial_request_text"]
+
 
 def wait_chat_reply():
     start_time = time.time()
@@ -54,21 +53,6 @@ def wait_chat_reply():
     )
 
 
-def send_chat_request(request, exit_on_fail = False):
-    try:
-        input_field = browser.find_element(By.XPATH, "//textarea[1]")
-        input_field.send_keys(request)
-        input_field.send_keys(Keys.RETURN)
-        print(f"Request sent, {time.asctime()}")
-        time.sleep(PROMPT_DELAY_SEC)
-    except NoSuchElementException:
-        print(f"No input field, {time.asctime()}")
-        if exit_on_fail:
-          exit()
-        else:
-          browser.refresh()
-          time.sleep(PROMPT_DELAY_SEC)
-
 def find_red_field():
     response_request_red = None
     try:
@@ -79,20 +63,64 @@ def find_red_field():
         print(f"No red limit message, {time.asctime()}")
     return response_request_red
 
+
+def find_input_field():
+    input_field = None
+    try:
+        input_field = browser.find_element(By.XPATH, "//textarea[1]")
+    except NoSuchElementException:
+        print(f"No input field, {time.asctime()}")
+    return input_field
+
+
+def send_chat_request(request, exit_on_fail=False):
+    input_field = find_input_field()
+
+    if input_field is not None:
+        input_field.send_keys(request)
+        input_field.send_keys(Keys.RETURN)
+        print(f"Request sent, {time.asctime()}")
+        time.sleep(PROMPT_DELAY_SEC)
+    elif exit_on_fail:
+        exit()
+    else:
+        browser.refresh()
+        time.sleep(PROMPT_DELAY_SEC)
+
+
 def limit_reached_loop():
-    response_request_red = True
     print(f"\nLimit reached or error at {time.asctime()}")
 
-    while response_request_red is not None:
+    while find_red_field() is not None or find_input_field() is None:
         print("Waiting...", end="\r", flush=True)
         time.sleep(5)
-        response_request_red = find_red_field()
 
     browser.refresh()
     time.sleep(PROMPT_DELAY_SEC)
 
 
-def process_line(line, line_index):
+def send_request_for_translation_and_wait_answer(
+    request_for_translation, exit_on_failure=False
+):
+    while True:
+        browser.refresh()
+        time.sleep(PROMPT_DELAY_SEC)
+        send_chat_request(
+            request=request_for_translation, exit_on_fail=exit_on_failure
+        )
+
+        if find_red_field() is not None:
+            limit_reached_loop()
+        else:
+            print(f"Request sent, translation started at {time.asctime()}")
+            wait_chat_reply()
+            responses = browser.find_elements(By.XPATH, "//p[1]")
+            return responses[-2].text.strip()
+
+
+def process_line():
+    global line_index
+    line = LINES[line_index - 1]
     if (
         line == ""
         or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
@@ -111,39 +139,33 @@ def process_line(line, line_index):
             print("Limit reached at the start of the Document")
             limit_reached_loop()
             send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
-        return # Skip "The Urantia Book" line
+        return  # Skip "The Urantia Book" line
 
-    browser.refresh()
-    time.sleep(PROMPT_DELAY_SEC)
-    send_chat_request(request=line.strip(), exit_on_fail=False)
-    response_request_red = find_red_field()
+    same_answer_counter = 0
+    while True:
+        # Send current line request
+        answer = send_request_for_translation_and_wait_answer(line.strip())
 
-    if response_request_red is not None:
-        limit_reached_loop()
-        send_chat_request(request=line.strip(), exit_on_fail=False)
-
-    print(f"Translation started at {time.asctime()}")
-    wait_chat_reply()
-
-    responses = browser.find_elements(By.XPATH, "//p[1]")
-    answer = responses[-2].text.strip()
-    answer_language = detect(answer)
-
-    while answer_language != 'uk' or answer_language == 'en':
-      print("Wrong answer language! Ask chat again to translate to Ukrainian")
-      send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
-      response_request_red = find_red_field()
-
-      if response_request_red is not None:
-          print("Limit reached at the start")
-          limit_reached_loop()
-          send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
-
-      responses = browser.find_elements(By.XPATH, "//p[1]")
-      answer = responses[-2].text.strip()
-      answer_language = detect(answer)
-
-    print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+        if detect(answer) != "uk":
+            print(
+                f"Wrong answer language: {answer}\n"
+                "Ask chat again to translate to Ukrainian"
+            )
+            # Send initial request
+            send_request_for_translation_and_wait_answer(INITIAL_REQUEST_TEXT)
+        elif answer == config["last_answer"]:
+            if same_answer_counter < 2:
+                print("ERROR: Got same answer as previous, will try next line ")
+                same_answer_counter += 1
+            elif same_answer_counter == 2:
+                line += 1
+                line = LINES[line_index - 1]
+            else:
+                print("ERROR: Got same answer constantly! ")
+                exit()
+        else:
+            print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+            break
 
     with open(
         os.path.join(
@@ -153,6 +175,9 @@ def process_line(line, line_index):
     ) as f:
         f.write(answer)
         f.write("\n")
+
+    line_index += 1
+    config["last_answer"] = answer
 
 
 if __name__ == "__main__":
@@ -189,19 +214,19 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 3 and sys.argv[2] == "True":
         print("Start with request to translate to Ukrainian")
-        send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
-        response_request_red = find_red_field()
-        if response_request_red is not None:
-            print("Limit reached at the start")
-            limit_reached_loop()
-            send_chat_request(request=INITIAL_REQUEST_TEXT, exit_on_fail=True)
+        send_request_for_translation_and_wait_answer(
+            INITIAL_REQUEST_TEXT, exit_on_failure=True
+        )
 
     print(
         f"{time.asctime()}: Starting translation. {len(LINES)} lines in file."
         f" Start from {start_line_index} line."
     )
-    for line_index in range(start_line_index, len(LINES) + 1):
-        process_line(LINES[line_index - 1], line_index)
+
+    line_index = start_line_index
+
+    while line_index < (len(LINES) + 1):
+        process_line()
         # Save last processed line to config
         config["last_processed_line"] = line_index
         with open(f"config.yaml", "w") as f:

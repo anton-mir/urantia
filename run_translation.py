@@ -148,6 +148,7 @@ def process_line():
         or re.search(r"^-.*$", line, flags=0)  # "-------"
     ):
         print(f"Line {line_index} skip")
+        line_index += 1
         return  # Skip such lines
 
     elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
@@ -155,6 +156,7 @@ def process_line():
         send_request_for_translation_and_wait_answer(
             line.strip(), exit_on_failure=True
         )
+        line_index += 1
         return  # Skip "The Urantia Book" line
 
     same_answer_counter = 0

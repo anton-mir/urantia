@@ -63,6 +63,7 @@ def click_green_button():
             and green_buttons[0].text == "Regenerate response"
         ):
             green_buttons[0].send_keys("browser" + Keys.ENTER)
+            time.sleep(PROMPT_DELAY_SEC)
             wait_chat_reply()
         else:
           print("Can't find the exact green button")
@@ -119,10 +120,14 @@ def send_request_for_translation_and_wait_answer(
             if find_red_field() is not None:
                 limit_reached_loop()
             else:
-                print(f"Request sent, translation started at {time.asctime()}")
+                print(f"Translation started at {time.asctime()}")
                 wait_chat_reply()
                 responses = browser.find_elements(By.XPATH, "//p[1]")
-                return responses[-2].text.strip()
+                answer = responses[-2].text.strip()
+                if len(answer)>config["min_answer_length"]:
+                  return answer
+                else:
+                  print("Wrong answer, too small, try again")
 
         elif exit_on_failure:
             exit()

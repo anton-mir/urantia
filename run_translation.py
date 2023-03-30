@@ -26,12 +26,28 @@ REPLY_DELAY_SEC = config["reply_delay_sec"]
 INITIAL_REQUEST_TEXT = config["initial_request_text"]
 
 
+def wait_time(wait_time):
+    start_time = time.time()
+
+    while time.time() - start_time < wait_time:
+        time.sleep(1)
+        print(
+            "Waiting %3d..." % (wait_time - (time.time() - start_time)),
+            end="\r",
+            flush=True,
+        )
+    print(
+        "               ",
+        end="\r",
+        flush=True,
+    )
+
 def wait_chat_reply():
     start_time = time.time()
     gray_response_field_len_prev = 0
 
     while time.time() - start_time < REPLY_DELAY_SEC:
-        time.sleep(2)
+        time.sleep(1)
         print(
             "Waiting %3d..." % (REPLY_DELAY_SEC - (time.time() - start_time)),
             end="\r",
@@ -63,14 +79,10 @@ def click_green_button():
             and green_buttons[0].text == "Regenerate response"
         ):
             green_buttons[0].send_keys("browser" + Keys.ENTER)
-            time.sleep(PROMPT_DELAY_SEC)
+            wait_time(PROMPT_DELAY_SEC)
             wait_chat_reply()
-        else:
-          print("Can't find the exact green button")
-          exit()
     except NoSuchElementException:
         print(f"No green button, {time.asctime()}")
-        exit()
 
 def find_red_field():
     response_request_red = None
@@ -96,10 +108,11 @@ def limit_reached_loop():
 
     while find_red_field() is not None or find_input_field() is None:
         print("Waiting...", end="\r", flush=True)
+        click_green_button()
         time.sleep(5)
 
     browser.refresh()
-    time.sleep(PROMPT_DELAY_SEC)
+    wait_time(PROMPT_DELAY_SEC)
 
 
 def send_request_for_translation_and_wait_answer(
@@ -107,7 +120,7 @@ def send_request_for_translation_and_wait_answer(
 ):
     while True:
         browser.refresh()
-        time.sleep(PROMPT_DELAY_SEC)
+        wait_time(PROMPT_DELAY_SEC)
         input_field = find_input_field()
 
         if input_field is not None:
@@ -115,7 +128,7 @@ def send_request_for_translation_and_wait_answer(
             input_field.send_keys(Keys.RETURN)
             print(f"Request sent, {time.asctime()}")
 
-            time.sleep(PROMPT_DELAY_SEC)
+            wait_time(PROMPT_DELAY_SEC)
 
             if find_red_field() is not None:
                 limit_reached_loop()
@@ -224,7 +237,7 @@ if __name__ == "__main__":
     )
     browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
 
-    time.sleep(PROMPT_DELAY_SEC)
+    wait_time(PROMPT_DELAY_SEC)
 
     assert start_line_index >= 1 and start_line_index <= len(
         LINES

@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver import ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import ActionChains
 
 from langdetect import detect
 
@@ -25,6 +26,11 @@ PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
 INITIAL_REQUEST_TEXT = config["initial_request_text"]
 
+def save_config():
+    with open(f"config.yaml", "w") as f:
+              yaml.dump(
+                  config, stream=f, default_flow_style=False, sort_keys=False
+              )
 
 def wait_time(wait_time):
     start_time = time.time()
@@ -115,8 +121,8 @@ def limit_reached_loop():
     wait_time(PROMPT_DELAY_SEC)
 
 
-def send_request_for_translation_and_wait_answer(
-    request_for_translation, exit_on_failure=False
+def send_chat_request_and_wait_answer(
+    request, exit_on_failure=False
 ):
     while True:
         browser.refresh()
@@ -124,7 +130,7 @@ def send_request_for_translation_and_wait_answer(
         input_field = find_input_field()
 
         if input_field is not None:
-            input_field.send_keys(request_for_translation)
+            input_field.send_keys(request)
             input_field.send_keys(Keys.RETURN)
             print(f"Request sent, {time.asctime()}")
 
@@ -133,7 +139,7 @@ def send_request_for_translation_and_wait_answer(
             if find_red_field() is not None:
                 limit_reached_loop()
             else:
-                print(f"Translation started at {time.asctime()}")
+                print(f"Request sent at {time.asctime()}")
                 wait_chat_reply()
                 responses = browser.find_elements(By.XPATH, "//p[1]")
                 answer = responses[-2].text.strip()
@@ -149,6 +155,26 @@ def send_request_for_translation_and_wait_answer(
             click_green_button()
             browser.refresh()
 
+def new_document_start():
+    browser.get(f"https://chat.openai.com/chat?model=gpt-4")
+    wait_time(PROMPT_DELAY_SEC)
+
+    print(send_chat_request_and_wait_answer(config['chat_name_request']))
+    print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
+
+    chats_list_side = browser.find_elements(
+    By.XPATH,
+    "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
+    )
+
+    ActionChains(browser).move_to_element(chats_list_side[0]).click().perform()
+
+    current_url = str(browser.current_url)
+    new_chat_id = current_url.split('/')[-1]
+    print(f"The current url of new chat is: {current_url}, "
+          f"new chat ID is {new_chat_id}, it's name is {chats_list_side[0].text}")
+    config["chat_id"] = new_chat_id
+    save_config()
 
 def process_line():
     global line_index
@@ -166,16 +192,17 @@ def process_line():
 
     elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
         print("New document translation start")
-        send_request_for_translation_and_wait_answer(
-            line.strip(), exit_on_failure=True
-        )
+        new_document_start()
+        # send_request_for_translation_and_wait_answer(
+        #     INITIAL_REQUEST_TEXT, exit_on_failure=True
+        # )
         line_index += 1
         return  # Skip "The Urantia Book" line
 
     same_answer_counter = 0
     while True:
         # Send current line request
-        answer = send_request_for_translation_and_wait_answer(line.strip())
+        answer = send_chat_request_and_wait_answer(line.strip())
 
         if detect(answer) != "uk":
             print(
@@ -183,7 +210,7 @@ def process_line():
                 "Ask chat again to translate to Ukrainian"
             )
             # Send initial request
-            send_request_for_translation_and_wait_answer(INITIAL_REQUEST_TEXT)
+            send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT)
         elif answer == config["last_answer"]:
             if same_answer_counter < 2:
                 print("ERROR: Got same answer as previous, will try next line ")
@@ -245,7 +272,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 3 and sys.argv[2] == "True":
         print("Start with request to translate to Ukrainian")
-        send_request_for_translation_and_wait_answer(
+        send_chat_request_and_wait_answer(
             INITIAL_REQUEST_TEXT, exit_on_failure=True
         )
 
@@ -260,9 +287,7 @@ if __name__ == "__main__":
         process_line()
         # Save last processed line to config
         config["last_processed_line"] = line_index
-        with open(f"config.yaml", "w") as f:
-            yaml.dump(
-                config, stream=f, default_flow_style=False, sort_keys=False
-            )
+        save_config()
+
     print("End!")
     browser.quit()

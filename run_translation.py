@@ -125,14 +125,12 @@ def send_chat_request_and_wait_answer(
     request, exit_on_failure=False
 ):
     while True:
-        browser.refresh()
         wait_time(PROMPT_DELAY_SEC)
         input_field = find_input_field()
 
         if input_field is not None:
             input_field.send_keys(request)
             input_field.send_keys(Keys.RETURN)
-            print(f"Request sent, {time.asctime()}")
 
             wait_time(PROMPT_DELAY_SEC)
 
@@ -156,29 +154,43 @@ def send_chat_request_and_wait_answer(
             browser.refresh()
 
 def new_document_start():
-    browser.get(f"https://chat.openai.com/chat?model=gpt-4")
-    wait_time(PROMPT_DELAY_SEC)
+    current_url = ""
+    new_chat_id = ""
 
-    print(send_chat_request_and_wait_answer(config['chat_name_request']))
-    print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
+    while len(current_url) != 65 and len(new_chat_id) != 36:
+        browser.get(f"https://chat.openai.com/chat?model=gpt-4")
+        print(send_chat_request_and_wait_answer(config['chat_name_request']))
+        wait_chat_reply()
 
-    chats_list_side = browser.find_elements(
-    By.XPATH,
-    "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
-    )
+        chats_list_side = browser.find_elements(
+        By.XPATH,
+        "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
+        )
+        print(chats_list_side)
+        ActionChains(browser).move_to_element(chats_list_side[1]).click().perform()
+        time.sleep(5)
+        chats_list_side = browser.find_elements(
+        By.XPATH,
+        "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
+        )
+        ActionChains(browser).move_to_element(chats_list_side[0]).click().perform()
 
-    ActionChains(browser).move_to_element(chats_list_side[0]).click().perform()
+        current_url = str(browser.current_url)
+        new_chat_id = current_url.split('/')[-1]
 
-    current_url = str(browser.current_url)
-    new_chat_id = current_url.split('/')[-1]
     print(f"The current url of new chat is: {current_url}, "
           f"new chat ID is {new_chat_id}, it's name is {chats_list_side[0].text}")
-    config["chat_id"] = new_chat_id
+    if new_chat_id != "chat?model=gpt-4":
+      config["chat_id"] = new_chat_id
     save_config()
+    print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
 
 def process_line():
     global line_index
     line = LINES[line_index - 1]
+    print(f"======================\nChat url is {str(browser.current_url)}")
+    print("Start new cycle with the line:")
+    print(line.strip())
     if (
         line == ""
         or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
@@ -193,9 +205,6 @@ def process_line():
     elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
         print("New document translation start")
         new_document_start()
-        # send_request_for_translation_and_wait_answer(
-        #     INITIAL_REQUEST_TEXT, exit_on_failure=True
-        # )
         line_index += 1
         return  # Skip "The Urantia Book" line
 
@@ -284,6 +293,7 @@ if __name__ == "__main__":
     line_index = start_line_index
 
     while line_index < (len(LINES) + 1):
+        browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
         process_line()
         # Save last processed line to config
         config["last_processed_line"] = line_index

@@ -48,10 +48,7 @@ browser.get(f"https://chat.openai.com/chat?model=gpt-4")
 time.sleep(PROMPT_DELAY_SEC)
 
 input_field = browser.find_element(By.XPATH, "//textarea[1]")
-input_field.send_keys("Translate all following requests in this conversation from the \
-English to Ukrainian language as professional translator keeping the numbers at \
-the beginning. Translate to the Ukrainian language only. Don't use any other language \
-in this conversation ever.")
+input_field.send_keys("Name this conversation with random fruit name and number")
 input_field.send_keys(Keys.RETURN)
 
 wait_chat_reply()

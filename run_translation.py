@@ -26,11 +26,11 @@ PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
 INITIAL_REQUEST_TEXT = config["initial_request_text"]
 
+
 def save_config():
     with open(f"config.yaml", "w") as f:
-              yaml.dump(
-                  config, stream=f, default_flow_style=False, sort_keys=False
-              )
+        yaml.dump(config, stream=f, default_flow_style=False, sort_keys=False)
+
 
 def wait_time(wait_time):
     start_time = time.time()
@@ -47,6 +47,7 @@ def wait_time(wait_time):
         end="\r",
         flush=True,
     )
+
 
 def wait_chat_reply():
     start_time = time.time()
@@ -90,6 +91,7 @@ def click_green_button():
     except NoSuchElementException:
         print(f"No green button, {time.asctime()}")
 
+
 def find_red_field():
     response_request_red = None
     try:
@@ -109,6 +111,7 @@ def find_input_field():
         print(f"No input field, {time.asctime()}")
     return input_field
 
+
 def limit_reached_loop():
     print(f"\nLimit reached or error at {time.asctime()}")
 
@@ -121,9 +124,7 @@ def limit_reached_loop():
     wait_time(PROMPT_DELAY_SEC)
 
 
-def send_chat_request_and_wait_answer(
-    request, exit_on_failure=False
-):
+def send_chat_request_and_wait_answer(request, exit_on_failure=False):
     while True:
         wait_time(PROMPT_DELAY_SEC)
         input_field = find_input_field()
@@ -141,10 +142,10 @@ def send_chat_request_and_wait_answer(
                 wait_chat_reply()
                 responses = browser.find_elements(By.XPATH, "//p[1]")
                 answer = responses[-2].text.strip()
-                if len(answer)>config["min_answer_length"]:
-                  return answer
+                if len(answer) > config["min_answer_length"]:
+                    return answer
                 else:
-                  print("Wrong answer, too small, try again")
+                    print("Wrong answer, too small, try again")
 
         elif exit_on_failure:
             exit()
@@ -153,37 +154,43 @@ def send_chat_request_and_wait_answer(
             click_green_button()
             browser.refresh()
 
-def new_document_start():
-    current_url = ""
+
+def new_document_start(document_name=None):
+    current_chat_url = ""
     new_chat_id = ""
 
-    while len(current_url) != 65 and len(new_chat_id) != 36:
+    while len(current_chat_url) != 65 and len(new_chat_id) != 36:
         browser.get(f"https://chat.openai.com/chat?model=gpt-4")
-        print(send_chat_request_and_wait_answer(config['chat_name_request']))
+        request_chat_name = f"Repeat after me: {document_name}"
+        print(send_chat_request_and_wait_answer(request_chat_name))
         wait_chat_reply()
 
         chats_list_side = browser.find_elements(
-        By.XPATH,
-        "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
+            By.XPATH,
+            "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
         )
-        print(chats_list_side)
-        ActionChains(browser).move_to_element(chats_list_side[1]).click().perform()
+        ActionChains(browser).move_to_element(
+            chats_list_side[1]
+        ).click().perform()
         time.sleep(5)
         chats_list_side = browser.find_elements(
-        By.XPATH,
-        "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
+            By.XPATH,
+            "//a[starts-with(@class,'flex py-3 px-3 items-center gap-3 relative rounded-md')]",
         )
-        ActionChains(browser).move_to_element(chats_list_side[0]).click().perform()
+        ActionChains(browser).move_to_element(
+            chats_list_side[0]
+        ).click().perform()
 
-        current_url = str(browser.current_url)
-        new_chat_id = current_url.split('/')[-1]
+        current_chat_url = str(browser.current_url)
+        new_chat_id = current_chat_url.split("/")[-1]
 
-    print(f"The current url of new chat is: {current_url}, "
-          f"new chat ID is {new_chat_id}, it's name is {chats_list_side[0].text}")
+    print(f"The current url of new chat is: {current_chat_url}")
+    print(f"New chat ID is {new_chat_id}")
     if new_chat_id != "chat?model=gpt-4":
-      config["chat_id"] = new_chat_id
+        config["chat_id"] = new_chat_id
     save_config()
     print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
+
 
 def process_line():
     global line_index
@@ -193,7 +200,6 @@ def process_line():
     print(line.strip())
     if (
         line == ""
-        or re.search(r"^Paper [0-9]*", line, flags=0)  # "Paper 2"
         or re.search(r"^[A-Z ’]*$", line, flags=0)  # "THE NATURE OF GOD"
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
         or re.search(r"^-.*$", line, flags=0)  # "-------"
@@ -204,20 +210,32 @@ def process_line():
 
     elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
         print("New document translation start")
-        new_document_start()
+        while not re.search(r"^Paper [0-9]*", line, flags=0):
+            line_index += 1
+            line = LINES[line_index - 1]
+        new_document_start(document_name=line.strip())
         line_index += 1
         return  # Skip "The Urantia Book" line
 
     same_answer_counter = 0
+    wrong_reply_counter = 0
     while True:
         # Send current line request
         answer = send_chat_request_and_wait_answer(line.strip())
 
         if detect(answer) != "uk":
+            assert (
+                wrong_reply_counter < 3
+            ), "Got answer in other than Ukrainian language 2 times in a row"
+            if wrong_reply_counter == 2 and re.search(r"^[0-9]*\:[0-9]*\.[0-9]* \([0-9]*\.[0-9]*\) \[.*\]", answer, flags=0):
+                print("This was last line of the document with authorship")
+                print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+                break
             print(
                 f"Wrong answer language: {answer}\n"
                 "Ask chat again to translate to Ukrainian"
             )
+            wrong_reply_counter += 1
             # Send initial request
             send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT)
         elif answer == config["last_answer"]:

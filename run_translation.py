@@ -200,7 +200,7 @@ def process_line():
     print(line.strip())
     if (
         line == ""
-        or re.search(r"^[A-Z ’]*$", line, flags=0)  # "THE NATURE OF GOD"
+        or re.search(r"^[A-Z -’]*$", line, flags=0)  # "THE NATURE OF GOD"
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
         or re.search(r"^-.*$", line, flags=0)  # "-------"
     ):
@@ -227,7 +227,11 @@ def process_line():
             assert (
                 wrong_reply_counter < 3
             ), "Got answer in other than Ukrainian language 2 times in a row"
-            if wrong_reply_counter == 2 and re.search(r"^[0-9]*\:[0-9]*\.[0-9]* \([0-9]*\.[0-9]*\) \[.*\]", answer, flags=0):
+            if wrong_reply_counter == 2 and re.search(
+                r"^[0-9]*\:[0-9]*\.[0-9]* \([0-9]*\.[0-9]*\) \[.*\]",
+                answer,
+                flags=0,
+            ):
                 print("This was last line of the document with authorship")
                 print(f"Line {line_index}/{len(LINES)}:\n{answer}")
                 break

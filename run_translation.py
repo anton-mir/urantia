@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -32,18 +34,19 @@ def save_config():
         yaml.dump(config, stream=f, default_flow_style=False, sort_keys=False)
 
 
-def wait_time(wait_time):
+def wait_time(time_to_wait):
     start_time = time.time()
 
-    while time.time() - start_time < wait_time:
+    while time.time() - start_time < time_to_wait:
         time.sleep(1)
         print(
-            "Waiting %3d..." % (wait_time - (time.time() - start_time)),
+            "Waiting... Time to recheck: %3d"
+            % (time_to_wait - (time.time() - start_time)),
             end="\r",
             flush=True,
         )
     print(
-        "               ",
+        " " * 40,
         end="\r",
         flush=True,
     )
@@ -113,12 +116,12 @@ def find_input_field():
 
 
 def limit_reached_loop():
-    print(f"\nLimit reached or error at {time.asctime()}")
+    print(f"\nLimit reached (or error) at {time.asctime()}")
 
     while find_red_field() is not None or find_input_field() is None:
         print("Waiting...", end="\r", flush=True)
         click_green_button()
-        time.sleep(5)
+        wait_time(PROMPT_DELAY_SEC)
 
     browser.refresh()
     wait_time(PROMPT_DELAY_SEC)
@@ -233,6 +236,10 @@ def process_line():
                 flags=0,
             ):
                 print("This was last line of the document with authorship")
+                print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+                break
+            elif wrong_reply_counter == 2 and len(answer) < 40:
+                print("This might be short string... Let it go.")
                 print(f"Line {line_index}/{len(LINES)}:\n{answer}")
                 break
             print(

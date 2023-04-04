@@ -116,10 +116,9 @@ def find_input_field():
 
 
 def limit_reached_loop():
-    print(f"\nLimit reached (or error) at {time.asctime()}")
+    print(f"Limit reached (or error) at {time.asctime()}")
 
     while find_red_field() is not None or find_input_field() is None:
-        print("Waiting...", end="\r", flush=True)
         click_green_button()
         wait_time(PROMPT_DELAY_SEC)
 
@@ -198,7 +197,8 @@ def new_document_start(document_name=None):
 def process_line():
     global line_index
     line = LINES[line_index - 1]
-    print(f"======================\nChat url is {str(browser.current_url)}")
+    print("=" * 40)
+    print(f"Chat url is {str(browser.current_url)}")
     print("Start new cycle with the line:")
     print(line.strip())
     if (
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     elif config["last_processed_line"] > 0 and config[
         "last_processed_line"
     ] < len(LINES):
-        start_line_index = config["last_processed_line"] + 1
+        start_line_index = config["last_processed_line"]
         print(
             "Config with previously processed line: start "
             f"from line {start_line_index}"

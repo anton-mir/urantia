@@ -281,10 +281,10 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         start_line_index = int(sys.argv[1])
         print(f"Command line argument: start from line {start_line_index}")
-    elif config["last_processed_line"] > 0 and config[
-        "last_processed_line"
+    elif config["start_from_config_line"] > 0 and config[
+        "start_from_config_line"
     ] < len(LINES):
-        start_line_index = config["last_processed_line"]
+        start_line_index = config["start_from_config_line"] - 1
         print(
             "Config with previously processed line: start "
             f"from line {start_line_index}"
@@ -325,7 +325,7 @@ if __name__ == "__main__":
         browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
         process_line()
         # Save last processed line to config
-        config["last_processed_line"] = line_index
+        config["start_from_config_line"] = line_index + 1
         save_config()
 
     print("End!")

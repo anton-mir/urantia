@@ -19,9 +19,10 @@ import os
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
-FILENAME_PREFIX = config["filename_prefix"]
 LINES = open(
-    os.path.join("./TheUrantiaBook/English", f"{FILENAME_PREFIX}_eng.txt"),
+    os.path.join(
+        "./TheUrantiaBook/English", f"UF-ENG-001-1955-20.5.txt"
+    ),
     "r",
 ).readlines()
 PROMPT_DELAY_SEC = config["prompt_delay_sec"]
@@ -160,6 +161,7 @@ def send_chat_request_and_wait_answer(request, exit_on_failure=False):
 def new_document_start(document_name=None):
     current_chat_url = ""
     new_chat_id = ""
+    document_number = document_name.split(" ")[1]
 
     while len(current_chat_url) != 65 and len(new_chat_id) != 36:
         browser.get(f"https://chat.openai.com/chat?model=gpt-4")
@@ -186,10 +188,13 @@ def new_document_start(document_name=None):
         current_chat_url = str(browser.current_url)
         new_chat_id = current_chat_url.split("/")[-1]
 
+    print(f"New Paper number is {document_number}")
     print(f"The current url of new chat is: {current_chat_url}")
     print(f"New chat ID is {new_chat_id}")
+
     if new_chat_id != "chat?model=gpt-4":
         config["chat_id"] = new_chat_id
+        config["filename_prefix"] = f"Doc{document_number}"
     save_config()
     print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
 
@@ -265,7 +270,7 @@ def process_line():
 
     with open(
         os.path.join(
-            "./TheUrantiaBook/Ukrainian", f"{FILENAME_PREFIX}_ukr.txt"
+            "./TheUrantiaBook/Ukrainian", f"{config['filename_prefix']}_ukr.txt"
         ),
         "a",
     ) as f:
@@ -284,7 +289,7 @@ if __name__ == "__main__":
     elif config["start_from_config_line"] > 0 and config[
         "start_from_config_line"
     ] < len(LINES):
-        start_line_index = config["start_from_config_line"] - 1
+        start_line_index = config["start_from_config_line"]
         print(
             "Config with previously processed line: start "
             f"from line {start_line_index}"

@@ -1,4 +1,4 @@
-last_processed_line: 1
+start_from_config_line: 1
 chat_id: 12345678-1234-1234-1234-123456789012
 filename_prefix: doc0
 prompt_delay_sec: 12
@@ -8,3 +8,7 @@ initial_request_text: >
   Translate all the following requests at this
   chat from the english to ukrainian language as professional translator
   keeping the numbers at the beginning.
+last_answer: "25:8.12 (284.5) [\u0421\u043F\u043E\u043D\u0441\u043E\u0440\u043E\u0432\
+  \u0430\u043D\u043E \u041E\u0434\u043D\u0438\u043C \u0412\u0438\u0441\u043E\u043A\
+  \u0438\u043C \u0443 \u0412\u043B\u0430\u0434\u0456 \u0437 \u0423\u0432\u0435\u0440\
+  \u0441\u0438.]"

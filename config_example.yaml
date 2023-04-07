@@ -1,6 +1,6 @@
-start_from_config_line: 1
+start_from_line: 1
 chat_id: 12345678-1234-1234-1234-123456789012
-filename_prefix: doc0
+paper_number: 1
 prompt_delay_sec: 12
 reply_delay_sec: 180
 driver_path: /usr/bin/chromedriver

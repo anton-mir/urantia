@@ -21,7 +21,8 @@ with open("config.yaml") as f:
 
 LINES = open(
     os.path.join(
-        "./TheUrantiaBook/English", f"UF-ENG-001-1955-20.5.txt"
+        "./TheUrantiaBook/English",
+        f"The_Urantia_Book_{config['paper_number']}.txt",
     ),
     "r",
 ).readlines()
@@ -194,7 +195,7 @@ def new_document_start(document_name=None):
 
     if new_chat_id != "chat?model=gpt-4":
         config["chat_id"] = new_chat_id
-        config["filename_prefix"] = f"Doc{document_number}"
+        config["paper_number"] = document_number
     save_config()
     print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
 
@@ -216,11 +217,8 @@ def process_line():
         line_index += 1
         return  # Skip such lines
 
-    elif re.search(r"The Urantia Book", line, flags=0):  # "The Urantia Book"
+    elif re.search(r"^Paper [0-9]*", line, flags=0):
         print("New document translation start")
-        while not re.search(r"^Paper [0-9]*", line, flags=0):
-            line_index += 1
-            line = LINES[line_index - 1]
         new_document_start(document_name=line.strip())
         line_index += 1
         return  # Skip "The Urantia Book" line
@@ -270,7 +268,8 @@ def process_line():
 
     with open(
         os.path.join(
-            "./TheUrantiaBook/Ukrainian", f"{config['filename_prefix']}_ukr.txt"
+            "./TheUrantiaBook/Ukrainian",
+            f"Книга_Урантії_{config['paper_number']}.txt",
         ),
         "a",
     ) as f:
@@ -286,10 +285,10 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         start_line_index = int(sys.argv[1])
         print(f"Command line argument: start from line {start_line_index}")
-    elif config["start_from_config_line"] > 0 and config[
-        "start_from_config_line"
+    elif config["start_from_line"] > 0 and config[
+        "start_from_line"
     ] < len(LINES):
-        start_line_index = config["start_from_config_line"]
+        start_line_index = config["start_from_line"]
         print(
             "Config with previously processed line: start "
             f"from line {start_line_index}"
@@ -330,7 +329,7 @@ if __name__ == "__main__":
         browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
         process_line()
         # Save last processed line to config
-        config["start_from_config_line"] = line_index + 1
+        config["start_from_line"] = line_index + 1
         save_config()
 
     print("End!")

@@ -19,17 +19,8 @@ import os
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
-LINES = open(
-    os.path.join(
-        "./TheUrantiaBook/English",
-        f"The_Urantia_Book_{config['paper_number']}.txt",
-    ),
-    "r",
-).readlines()
 PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
-INITIAL_REQUEST_TEXT = config["initial_request_text"]
-
 
 def save_config():
     with open(f"config.yaml", "w") as f:
@@ -197,15 +188,17 @@ def new_document_start(document_name=None):
         config["chat_id"] = new_chat_id
         config["paper_number"] = document_number
     save_config()
-    print(send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT))
+    print(send_chat_request_and_wait_answer(config["initial_request_text"]))
 
 
 def process_line():
     global line_index
-    line = LINES[line_index - 1]
+    global lines_from_file
+
+    line = lines_from_file[line_index]
     print("=" * 40)
     print(f"Chat url is {str(browser.current_url)}")
-    print("Start new cycle with the line:")
+    print(f"Start new cycle with the line {line_index+1}:")
     print(line.strip())
     if (
         line == ""
@@ -213,7 +206,7 @@ def process_line():
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
         or re.search(r"^-.*$", line, flags=0)  # "-------"
     ):
-        print(f"Line {line_index} skip")
+        print(f"Line {line_index+1} skip")
         line_index += 1
         return  # Skip such lines
 
@@ -239,11 +232,11 @@ def process_line():
                 flags=0,
             ):
                 print("This was last line of the document with authorship")
-                print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+                print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
             elif wrong_reply_counter == 2 and len(answer) < 40:
                 print("This might be short string... Let it go.")
-                print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+                print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
             print(
                 f"Wrong answer language: {answer}\n"
@@ -251,19 +244,19 @@ def process_line():
             )
             wrong_reply_counter += 1
             # Send initial request
-            send_chat_request_and_wait_answer(INITIAL_REQUEST_TEXT)
+            send_chat_request_and_wait_answer(config["initial_request_text"])
         elif answer == config["last_answer"]:
             if same_answer_counter < 2:
                 print("ERROR: Got same answer as previous, will try next line ")
                 same_answer_counter += 1
             elif same_answer_counter == 2:
                 line += 1
-                line = LINES[line_index - 1]
+                line = lines_from_file[line_index - 1]
             else:
                 print("ERROR: Got same answer constantly! ")
                 exit()
         else:
-            print(f"Line {line_index}/{len(LINES)}:\n{answer}")
+            print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
             break
 
     with open(
@@ -281,21 +274,28 @@ def process_line():
 
 
 if __name__ == "__main__":
+    lines_from_file = open(
+    os.path.join(
+        "./TheUrantiaBook/English",
+        f"The_Urantia_Book_{config['paper_number']}.txt",
+    ),
+    "r",
+    ).readlines()
     # Get start line number as first command line argument
     if len(sys.argv) > 1:
-        start_line_index = int(sys.argv[1])
-        print(f"Command line argument: start from line {start_line_index}")
-    elif config["start_from_line"] > 0 and config[
+        start_line_index = int(sys.argv[1]) - 1
+        print(f"Command line argument: start from line {start_line_index+1}")
+    elif config["start_from_line"] - 1 >= 0 and config[
         "start_from_line"
-    ] < len(LINES):
-        start_line_index = config["start_from_line"]
+    ] -1 < len(lines_from_file):
+        start_line_index = config["start_from_line"] - 1
         print(
             "Config with previously processed line: start "
-            f"from line {start_line_index}"
+            f"from line {start_line_index+1}"
         )
     else:
-        start_line_index = 1
-        print(f"Start by default from line {start_line_index}")
+        start_line_index = 0
+        print(f"Start by default from line {start_line_index+1}")
 
     options = ChromeOptions()
     options.debugger_address = "127.0.0.1:" + "8888"
@@ -308,29 +308,43 @@ if __name__ == "__main__":
 
     wait_time(PROMPT_DELAY_SEC)
 
-    assert start_line_index >= 1 and start_line_index <= len(
-        LINES
+    assert start_line_index >= 0 and start_line_index < len(
+        lines_from_file
     ), "Wrong start line"
 
     if len(sys.argv) == 3 and sys.argv[2] == "True":
         print("Start with request to translate to Ukrainian")
         send_chat_request_and_wait_answer(
-            INITIAL_REQUEST_TEXT, exit_on_failure=True
+            config["initial_request_text"], exit_on_failure=True
         )
 
     print(
-        f"{time.asctime()}: Starting translation. {len(LINES)} lines in file."
-        f" Start from {start_line_index} line."
+        f"{time.asctime()}: Starting translation. {len(lines_from_file)} lines in file."
+        f" Start from {start_line_index+1} line."
     )
 
     line_index = start_line_index
 
-    while line_index < (len(LINES) + 1):
-        browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
-        process_line()
-        # Save last processed line to config
+    while True:
+        while line_index < (len(lines_from_file)):
+            browser.get(f"https://chat.openai.com/chat/{config['chat_id']}")
+            process_line()
+            # Save last processed line to config
+            config["start_from_line"] = line_index + 1
+            save_config()
+
+        print(f"End Paper {config['paper_number']}!")
+        config['paper_number'] = config['paper_number'] + 1
+        line_index = 0
         config["start_from_line"] = line_index + 1
         save_config()
 
-    print("End!")
+        lines_from_file = open(
+        os.path.join(
+            "./TheUrantiaBook/English",
+            f"The_Urantia_Book_{config['paper_number']}.txt",
+        ),
+        "r",
+        ).readlines()
+
     browser.quit()

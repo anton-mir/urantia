@@ -4,8 +4,8 @@ paper_number: 1
 prompt_delay_sec: 12
 reply_delay_sec: 180
 driver_path: /usr/bin/chromedriver
-initial_request_text: >
-  Translate all the following requests at this
+debug_port: 8888
+initial_request_text: Translate all the following requests at this
   chat from the english to ukrainian language as professional translator
   keeping the numbers at the beginning.
 last_answer: "25:8.12 (284.5) [\u0421\u043F\u043E\u043D\u0441\u043E\u0440\u043E\u0432\

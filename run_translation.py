@@ -234,7 +234,7 @@ def process_line():
                 print("This was last line of the document with authorship")
                 print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
-            elif wrong_reply_counter == 2 and len(answer) < 40:
+            elif wrong_reply_counter == 2 and len(answer) < 50:
                 print("This might be short string... Let it go.")
                 print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         start_line_index = config["start_from_line"] - 1
         print(
             "Config with previously processed line: start "
-            f"from line {start_line_index+1}"
+            f"from line {start_line_index+1}, Paper {config['paper_number']}"
         )
     else:
         start_line_index = 0

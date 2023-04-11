@@ -1,5 +1,33 @@
 #!/usr/bin/python3
 
+"""
+License Copyright: Unlicense.org.
+License License: CC0 1.0 Universal (CC0 1.0).
+SPDX short identifier: Unlicense
+
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
+software, either in source code form or as a compiled binary, for any purpose,
+commercial or non-commercial, and by any means.
+
+In jurisdictions that recognize copyright laws, the author or authors of this
+software dedicate any and all copyright interest in the software to the public
+domain. We make this dedication for the benefit of the public at large and to
+the detriment of our heirs and successors. We intend this dedication to be an
+overt act of relinquishment in perpetuity of all present and future rights to
+this software under copyright law.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+For more information about the license, please refer to http://unlicense.org/
+"""
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -21,6 +49,7 @@ with open("config.yaml") as f:
 
 PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
+
 
 def save_config():
     with open(f"config.yaml", "w") as f:
@@ -223,10 +252,7 @@ def process_line():
         answer = send_chat_request_and_wait_answer(line.strip())
 
         if detect(answer) != "uk":
-            assert (
-                wrong_reply_counter < 3
-            ), "Got answer in other than Ukrainian language 2 times in a row"
-            if wrong_reply_counter == 2 and re.search(
+            if wrong_reply_counter == 1 and re.search(
                 r"^[0-9]*\:[0-9]*\.[0-9]* \([0-9]*\.[0-9]*\) \[.*\]",
                 answer,
                 flags=0,
@@ -234,9 +260,12 @@ def process_line():
                 print("This was last line of the document with authorship")
                 print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
-            elif wrong_reply_counter == 2 and len(answer) < 50:
+            elif wrong_reply_counter == 1 and len(answer) < 50:
                 print("This might be short string... Let it go.")
                 print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
+                break
+            elif wrong_reply_counter == 1:
+                print("Asked to use Ukrainian only once.")
                 break
             print(
                 f"Wrong answer language: {answer}\n"
@@ -275,11 +304,11 @@ def process_line():
 
 if __name__ == "__main__":
     lines_from_file = open(
-    os.path.join(
-        "./TheUrantiaBook/English",
-        f"The_Urantia_Book_{config['paper_number']}.txt",
-    ),
-    "r",
+        os.path.join(
+            "./TheUrantiaBook/English",
+            f"The_Urantia_Book_{config['paper_number']}.txt",
+        ),
+        "r",
     ).readlines()
     # Get start line number as first command line argument
     if len(sys.argv) > 1:
@@ -287,7 +316,7 @@ if __name__ == "__main__":
         print(f"Command line argument: start from line {start_line_index+1}")
     elif config["start_from_line"] - 1 >= 0 and config[
         "start_from_line"
-    ] -1 < len(lines_from_file):
+    ] - 1 < len(lines_from_file):
         start_line_index = config["start_from_line"] - 1
         print(
             "Config with previously processed line: start "
@@ -295,10 +324,12 @@ if __name__ == "__main__":
         )
     else:
         start_line_index = 0
-        print(f"Start by default from line {start_line_index+1}")
+        print(
+            f"Start by default from line {start_line_index+1}, Paper {config['paper_number']}"
+        )
 
     options = ChromeOptions()
-    options.debugger_address = "127.0.0.1:" + "8888"
+    options.debugger_address = f"127.0.0.1:{config['debug_port']}"
     options.add_argument("start-maximized")
 
     browser = webdriver.Chrome(
@@ -334,17 +365,17 @@ if __name__ == "__main__":
             save_config()
 
         print(f"End Paper {config['paper_number']}!")
-        config['paper_number'] = config['paper_number'] + 1
+        config["paper_number"] = int(config["paper_number"]) + 1
         line_index = 0
         config["start_from_line"] = line_index + 1
         save_config()
 
         lines_from_file = open(
-        os.path.join(
-            "./TheUrantiaBook/English",
-            f"The_Urantia_Book_{config['paper_number']}.txt",
-        ),
-        "r",
+            os.path.join(
+                "./TheUrantiaBook/English",
+                f"The_Urantia_Book_{config['paper_number']}.txt",
+            ),
+            "r",
         ).readlines()
 
     browser.quit()

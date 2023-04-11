@@ -60,7 +60,7 @@ $ source ~/.bash_profile
 ```
 7. Run chrome with:
 ```
-$ google-chrome --remote-debugging-port={port_from_config} --user-data-dir=/home/{user}/chromedriver/
+$ google-chrome --remote-debugging-port=[port_number, see config, may be 8888] --user-data-dir=/home/{user}/chromedriver/
 ```
 8. In the newly opened Chrome window go to https://chat.openai.com/chat and
 log in to your Plus account

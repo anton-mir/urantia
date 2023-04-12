@@ -279,7 +279,7 @@ def process_line():
                 print("ERROR: Got same answer as previous, will try next line ")
                 same_answer_counter += 1
             elif same_answer_counter == 2:
-                line += 1
+                line_index += 1
                 line = lines_from_file[line_index - 1]
             else:
                 print("ERROR: Got same answer constantly! ")

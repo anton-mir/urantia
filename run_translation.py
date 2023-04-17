@@ -114,7 +114,7 @@ def click_green_button():
             wait_time(PROMPT_DELAY_SEC)
             wait_chat_reply()
         else:
-          print("Too many green something, refresh the page")
+          print(f"Too many green something: {len(green_buttons)}, refresh the page")
           browser.refresh()
           wait_time(PROMPT_DELAY_SEC)
     except NoSuchElementException:
@@ -235,7 +235,7 @@ def process_line():
     print(line.strip())
     if (
         line == ""
-        or re.search(r"^[A-Z -]*$", line, flags=0)  # "THE NATURE OF GOD"
+        or re.search(r"^[A-Z -—]*$", line, flags=0)  # "THE NATURE OF GOD"
         or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
         or re.search(r"^-.*$", line, flags=0)  # "-------"
     ):

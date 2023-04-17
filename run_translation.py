@@ -113,6 +113,10 @@ def click_green_button():
             green_buttons[0].send_keys("browser" + Keys.ENTER)
             wait_time(PROMPT_DELAY_SEC)
             wait_chat_reply()
+        else:
+          print("Too many green something, refresh the page")
+          browser.refresh()
+          wait_time(PROMPT_DELAY_SEC)
     except NoSuchElementException:
         print(f"No green button, {time.asctime()}")
 

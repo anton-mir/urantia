@@ -237,9 +237,9 @@ def process_line():
     print(line.strip())
     if (
         line == ""
-        or re.search(r"^[A-Z -—]*$", line, flags=0)  # "THE NATURE OF GOD"
-        or re.search(r"^[0-9]*\. ", line, flags=0)  # "1. THE INFINITY OF GOD"
-        or re.search(r"^-.*$", line, flags=0)  # "-------"
+        or re.search("^[A-Z -]*$", line)  # "THE NATURE OF GOD"
+        or re.search("^[0-9]*\. ", line)  # "1. THE INFINITY OF GOD"
+        or re.search("^-.*$", line)  # "-------"
     ):
         print(f"Line {line_index+1} skip")
         line_index += 1

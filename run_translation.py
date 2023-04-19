@@ -114,7 +114,38 @@ def click_green_button():
             wait_time(PROMPT_DELAY_SEC)
             wait_chat_reply()
         elif len(green_buttons) == 0:
-          print("Nothing green")
+          print("Nothing green, refresh")
+          browser.refresh()
+          wait_time(PROMPT_DELAY_SEC)
+          try:
+            human = browser.find_elements(
+              By.XPATH, '//span[@class="ctp-label"]'
+            )
+            if (
+            len(human) == 1
+            and human[0].text == "Verify you are human"
+            ):
+              print("Check humanity")
+              try:
+                human_checkbox = browser.find_elements(
+                  By.XPATH, '//input[@type="checkbox"]'
+                )
+                if (
+                len(human_checkbox) == 1
+                ):
+                  print("Click checkbox and wait")
+                  human_checkbox[0].click()
+                  wait_time(PROMPT_DELAY_SEC)
+                  wait_chat_reply()
+                else:
+                  print(f"Checkbox dont work, len {len(human_checkbox)}")
+              except NoSuchElementException:
+                print(f"No human checkbox, {time.asctime()}")
+            else:
+              print(f"Check humanity dont work, len {len(human)}")
+              print(f"text {human[0].text}")
+          except NoSuchElementException:
+            print(f"No human test, {time.asctime()}")
         else:
           print(f"Found {len(green_buttons)} green something, refresh the page")
           browser.refresh()

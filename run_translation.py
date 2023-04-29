@@ -286,7 +286,7 @@ def wait_for_allowance(red_text):
     date_time_now_hour = int(date_time_now.split(":")[0])
     date_time_now_minute = int(date_time_now.split(":")[1])
 
-    wait_until = (red_text.split()[-4] + red_text.split()[-3]).replace(".", "")
+    wait_until = (red_text.split()[-7] + red_text.split()[-6]).replace(".", "")
     wait_until = timeConversion(wait_until)
     wait_until_hour = int(wait_until.split(":")[0])
     wait_until_minute = int(wait_until.split(":")[1])
@@ -512,7 +512,12 @@ def process_line():
                 print(f"{lineno()}: ERROR: Got same answer as previous, will try next line ")
                 same_answer_counter += 1
             elif same_answer_counter == 2:
-                line_index += 1
+                print(f"{lineno()}: Same answer twice, line is {line_index}")
+                if line_index < len(lines_from_file)-1:
+                  line_index += 1
+                else:
+                  print(f"{lineno()}: No more lines in file?")
+                  break
                 line = lines_from_file[line_index]
             else:
                 print(f"{lineno()}: ERROR: Got same answer constantly! ")

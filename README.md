@@ -51,11 +51,11 @@ $ pip3 install selenium
 
 4. Check your version of the Chrome and download the Selenium driver for your Chrome version https://chromedriver.chromium.org/downloads
 
-5. Put the Selenium driver to ~/chromedriver and to /usr/bin/
+5. Put the Selenium driver to ~/chromedriver (might be not needed) and to /usr/bin/
 
 6. Run:
 ```
-$ echo 'export PATH=$PATH:/home/{user}/chromedriver' >> ~/.bash_profile
+$ echo 'export PATH=$PATH:/home/{user}/chromedriver' >> ~/.bash_profile (might be not needed)
 $ source ~/.bash_profile
 ```
 7. Run chrome with:

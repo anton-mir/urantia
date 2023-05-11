@@ -2,6 +2,8 @@
 import pyautogui
 import time
 
+# to track mouse use pyautogui.mouseInfo()
+
 
 if __name__ == "__main__":
 
@@ -9,12 +11,12 @@ if __name__ == "__main__":
         "mouse_m.txt",
         "r",
     ).readlines()
-    target_one_x = 840
-    target_one_y = 640
-    target_double1_x = 1320
-    target_double1_y = 644
-    target_double2_x = 362
-    target_double2_y = 644
+    target_left_x = 360 # left
+    target_left_y = 640
+    target_center_x = 840 # center
+    target_center_y = 640
+    target_right_x = 1330 # right
+    target_right_y = 640
     click = False
     for line in lines_from_file:
         mouseX, mouseY, m_delay = line.split()
@@ -23,25 +25,25 @@ if __name__ == "__main__":
         time.sleep(float(m_delay))
         pyautogui.moveTo(mouseX, mouseY)
         x_approve = (
-            (mouseX >= target_one_x - 5 and mouseX <= target_one_x + 5)
+            (mouseX >= target_center_x - 5 and mouseX <= target_center_x + 5)
             or (
-                mouseX >= target_double1_x - 5
-                and mouseX <= target_double1_x + 5
+                mouseX >= target_right_x - 5
+                and mouseX <= target_right_x + 5
             )
             or (
-                mouseX >= target_double2_x - 5
-                and mouseX <= target_double2_x + 5
+                mouseX >= target_left_x - 5
+                and mouseX <= target_left_x + 5
             )
         )
         y_approve = (
-            (mouseY >= target_one_y - 5 and mouseY <= target_one_y + 5)
+            (mouseY >= target_center_y - 5 and mouseY <= target_center_y + 5)
             or (
-                mouseY >= target_double1_y - 5
-                and mouseY <= target_double1_y + 5
+                mouseY >= target_right_y - 5
+                and mouseY <= target_right_y + 5
             )
             or (
-                mouseY >= target_double2_y - 5
-                and mouseY <= target_double2_y + 5
+                mouseY >= target_left_y - 5
+                and mouseY <= target_left_y + 5
             )
         )
         print(mouseX, mouseY, x_approve, y_approve, click)

@@ -107,7 +107,7 @@ def wait_chat_reply():
     gray_response_field_len_prev = 0
 
     while time.time() - start_time < REPLY_DELAY_SEC:
-        time.sleep(1)
+        time.sleep(10)
         print(
             "Waiting %3d..." % (REPLY_DELAY_SEC - (time.time() - start_time)),
             end="\r",
@@ -314,8 +314,7 @@ def wait_for_allowance(red_text):
             + ((wait_until_minute + 60) - date_time_now_minute) * 60
         )
     print(
-        f"{lineno()}: Wait until red message end {wait_needed_sec} sec "
-        f"({wait_needed_sec/60} min or {wait_needed_sec/(60*60)} hours)"
+        f"{lineno()}: Wait until red message end {int(wait_needed_sec/(60*60))}:{int(wait_needed_sec%(60*60)/60)}:{int(wait_needed_sec%60)}"
     )
     print("Open the window now then!")
     wait_time(wait_needed_sec)

@@ -254,13 +254,13 @@ def find_check_red_field():
 
 def find_input_field():
     global browser_global
-    input_fields = None
+    input_field = None
     try:
-        input_fields = browser_global.find_elements(By.XPATH, "//textarea")
+        input_field = browser_global.find_element(By.XPATH, "//textarea")
         print(f"{lineno()}: Input field found, {time.asctime()}")
     except NoSuchElementException:
         print(f"{lineno()}: No input field, {time.asctime()}")
-    return input_fields[0]
+    return input_field
 
 
 def timeConversion(s):
@@ -319,7 +319,7 @@ def wait_for_allowance(red_text):
     )
     print("Open the window now then!")
     wait_time(wait_needed_sec)
-
+    click_green_button()
 
 def limit_reached_loop():
     global browser_global

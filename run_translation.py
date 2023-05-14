@@ -66,6 +66,8 @@ def save_config():
     with open(f"config.yaml", "w") as f:
         yaml.dump(config, stream=f, default_flow_style=False, sort_keys=False)
 
+def sec_to_time(seconds):
+   return f"{int(seconds/(60*60))}:{int(seconds%(60*60)/60)}:{int(seconds%60)}"
 
 def wait_time(time_to_wait):
     start_time = time.time()
@@ -73,8 +75,7 @@ def wait_time(time_to_wait):
     while time.time() - start_time < time_to_wait:
         time.sleep(1)
         print(
-            "Waiting... Time to recheck: %3d"
-            % (time_to_wait - (time.time() - start_time)),
+            f"Waiting... Time to recheck: {sec_to_time(time_to_wait - (time.time() - start_time))}",
             end="\r",
             flush=True,
         )
@@ -314,7 +315,7 @@ def wait_for_allowance(red_text):
             + ((wait_until_minute + 60) - date_time_now_minute) * 60
         )
     print(
-        f"{lineno()}: Wait until red message end {int(wait_needed_sec/(60*60))}:{int(wait_needed_sec%(60*60)/60)}:{int(wait_needed_sec%60)}"
+        f"{lineno()}: Wait until red message end {sec_to_time(wait_needed_sec)}"
     )
     print("Open the window now then!")
     wait_time(wait_needed_sec)

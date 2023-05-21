@@ -49,6 +49,7 @@ import os
 import random
 import inspect
 import subprocess
+import notify2
 
 with open("config.yaml") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
@@ -57,17 +58,24 @@ PROMPT_DELAY_SEC = config["prompt_delay_sec"]
 REPLY_DELAY_SEC = config["reply_delay_sec"]
 browser_global = None
 red_text_global = None
+notify2.init("Urantia translation")
+
 
 def lineno():
     """Returns the current line number in our program."""
     return inspect.currentframe().f_back.f_lineno
 
+
 def save_config():
     with open(f"config.yaml", "w") as f:
         yaml.dump(config, stream=f, default_flow_style=False, sort_keys=False)
 
+
 def sec_to_time(seconds):
-   return f"{int(seconds/(60*60))}:{int(seconds%(60*60)/60)}:{int(seconds%60)}"
+    return (
+        f"{int(seconds/(60*60))}:{int(seconds%(60*60)/60)}:{int(seconds%60)}   "
+    )
+
 
 def wait_time(time_to_wait):
     start_time = time.time()
@@ -75,7 +83,8 @@ def wait_time(time_to_wait):
     while time.time() - start_time < time_to_wait:
         time.sleep(1)
         print(
-            f"Waiting... Time to recheck: {sec_to_time(time_to_wait - (time.time() - start_time))}",
+            "Waiting... Time to recheck: "
+            f"{sec_to_time(time_to_wait - (time.time() - start_time))}",
             end="\r",
             flush=True,
         )
@@ -87,20 +96,24 @@ def wait_time(time_to_wait):
 
 
 def findThisProcess(process_name):
-  ps = subprocess.Popen("ps -A | grep "+process_name, shell=True, stdout=subprocess.PIPE)
-  output = str(ps.stdout.read())
-  ps.stdout.close()
-  ps.wait()
+    ps = subprocess.Popen(
+        "ps -A | grep " + process_name, shell=True, stdout=subprocess.PIPE
+    )
+    output = str(ps.stdout.read())
+    ps.stdout.close()
+    ps.wait()
 
-  return output
+    return output
+
 
 def isThisRunning(process_name):
-  output = findThisProcess(process_name)
+    output = findThisProcess(process_name)
 
-  if re.search(process_name, output) is None:
-    return False
-  else:
-    return True
+    if re.search(process_name, output) is None:
+        return False
+    else:
+        return True
+
 
 def wait_chat_reply():
     global browser_global
@@ -194,6 +207,7 @@ def click_recorded():
             click = False
     wait_time(5)
 
+
 def click_green_button():
     global browser_global
     try:
@@ -237,20 +251,22 @@ def find_check_red_field():
             By.CSS_SELECTOR, "div[class*='bg-red']"
         )
         print(
-            f"{lineno()}: Red limit message found: {red_text_global.text}, {time.asctime()}"
+            f"{lineno()}: Red limit message found: "
+            f"{red_text_global.text}, {time.asctime()}"
         )
         if re.search(
-          r"current usage cap",
-          red_text_global.text,
-          flags=0,
-          ):
-          print(f"{lineno()}: Usage cap loop start")
-          wait_for_allowance(red_text_global.text)
+            r"current usage cap",
+            red_text_global.text,
+            flags=0,
+        ):
+            print(f"{lineno()}: Usage cap loop start")
+            wait_for_allowance(red_text_global.text)
         else:
-          print(f"{lineno()}: Some other red message appeared, refresh")
-          browser_global.refresh()
+            print(f"{lineno()}: Some other red message appeared, refresh")
+            browser_global.refresh()
     except NoSuchElementException:
         print(f"{lineno()}: No red limit message, {time.asctime()}")
+
 
 def find_input_field():
     global browser_global
@@ -294,7 +310,7 @@ def wait_for_allowance(red_text):
 
     print(f"{lineno()}: Wait until {wait_until_hour}:{wait_until_minute}")
 
-    wait_needed_sec = 30 # Add 30 sec to wait time
+    wait_needed_sec = 30  # Add 30 sec to wait time
     if wait_until_hour >= date_time_now_hour:
         wait_needed_sec = (
             wait_needed_sec + (wait_until_hour - date_time_now_hour) * 60 * 60
@@ -321,6 +337,7 @@ def wait_for_allowance(red_text):
     wait_time(wait_needed_sec)
     click_green_button()
 
+
 def limit_reached_loop():
     global browser_global
     global red_text_global
@@ -328,7 +345,9 @@ def limit_reached_loop():
     print(f"{lineno()}: Limit reached (or error) at {time.asctime()}")
     cycle_counter = 0
     while True:
-        print(f"{lineno()}: Limit reached loop cycle {cycle_counter}, {time.asctime()}")
+        print(
+            f"{lineno()}: Limit reached loop cycle {cycle_counter}, {time.asctime()}"
+        )
         click_green_button()
         wait_time(PROMPT_DELAY_SEC)
         cycle_counter += 1
@@ -336,17 +355,21 @@ def limit_reached_loop():
 
         # Have NO RED message
         if find_input_field() is not None:
-          # Have INPUT field
-          print(f"{lineno()}: Exit limit reached loop")
-          break
+            # Have INPUT field
+            print(f"{lineno()}: Exit limit reached loop")
+            break
         else:
-          # Have NO INPUT field
-          print(f"{lineno()}: Run mouse replay because of the prompt")
-          if isThisRunning('mouse_replay') == False:
-            print("Run mouse replay now")
-            exit()
-          else:
-            print("Mouse replay is active, will not run it")
+            # Have NO INPUT field
+            print(f"{lineno()}: Run mouse replay because of the prompt")
+            if isThisRunning("mouse_replay") == False:
+                print("Run mouse replay now")
+                notification_exit = notify2.Notification(
+                    "Urantia", "Exit because of the prompt 1"
+                )
+                notification_exit.show()
+                exit()
+            else:
+                print("Mouse replay is active, will not run it")
 
     browser_global.refresh()
     wait_time(PROMPT_DELAY_SEC)
@@ -369,13 +392,17 @@ def send_chat_request_and_wait_answer(request, exit_on_failure=False):
             find_check_red_field()
             # ----
             if find_input_field() is None:
-              print(f"{lineno()}: Run mouse replay because of the prompt")
-              if isThisRunning('mouse_replay') == False:
-                print("Run mouse replay now")
-                exit()
-              else:
-                print("Mouse replay is active, will not run it")
-                continue
+                print(f"{lineno()}: Run mouse replay because of the prompt")
+                if isThisRunning("mouse_replay") == False:
+                    print("Run mouse replay now")
+                    notification_exit = notify2.Notification(
+                        "Urantia", "Exit because of the prompt 2"
+                    )
+                    notification_exit.show()
+                    exit()
+                else:
+                    print("Mouse replay is active, will not run it")
+                    continue
 
             print(f"{lineno()}: Request sent at {time.asctime()}")
             wait_chat_reply()
@@ -398,19 +425,30 @@ def send_chat_request_and_wait_answer(request, exit_on_failure=False):
             #         print(f"{lineno()}: Wrong answer, too small, try again")
 
         elif exit_on_failure:
+            notification_exit = notify2.Notification(
+                "Urantia", "Exit on failure!"
+            )
+            notification_exit.show()
             exit()
         else:
-            print(f"{lineno()}: No input field found, try search for green button")
+            print(
+                f"{lineno()}: No input field found, try search for green button"
+            )
             result = click_green_button()
-            print(f"{lineno()}: Result of search is ",result)
+            print(f"{lineno()}: Result of search is ", result)
             if result is False:
-              print(f"{lineno()}: Run mouse replay because of the prompt")
-              if isThisRunning('mouse_replay') == False:
-                print("Run mouse replay now")
-                exit()
-              else:
-                print("Mouse replay is active, will not run it")
-                continue
+                print(f"{lineno()}: Run mouse replay because of the prompt")
+                if isThisRunning("mouse_replay") == False:
+                    print("Run mouse replay now")
+                    notification_exit = notify2.Notification(
+                        "Urantia", "Exit because of the prompt 3"
+                    )
+                    notification_exit.show()
+                    exit()
+                else:
+                    print("Mouse replay is active, will not run it")
+                    continue
+
 
 def new_document_start(document_name=None):
     global browser_global
@@ -492,7 +530,9 @@ def process_line():
                 answer,
                 flags=0,
             ):
-                print(f"{lineno()}: This was last line of the document with authorship")
+                print(
+                    f"{lineno()}: This was last line of the document with authorship"
+                )
                 print(f"Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
                 break
             elif wrong_reply_counter == 1 and len(answer) < 50:
@@ -511,21 +551,29 @@ def process_line():
             send_chat_request_and_wait_answer(config["initial_request_text"])
         elif answer == config["last_answer"]:
             if same_answer_counter < 2:
-                print(f"{lineno()}: ERROR: Got same answer as previous, will try next line ")
+                print(
+                    f"{lineno()}: ERROR: Got same answer as previous, will try next line "
+                )
                 same_answer_counter += 1
             elif same_answer_counter == 2:
                 print(f"{lineno()}: Same answer twice, line is {line_index}")
-                if line_index < len(lines_from_file)-1:
-                  line_index += 1
+                if line_index < len(lines_from_file) - 1:
+                    line_index += 1
                 else:
-                  print(f"{lineno()}: No more lines in file?")
-                  break
+                    print(f"{lineno()}: No more lines in file?")
+                    break
                 line = lines_from_file[line_index]
             else:
                 print(f"{lineno()}: ERROR: Got same answer constantly! ")
+                notification_exit = notify2.Notification(
+                    "Urantia", "Exit because wrong chat answer"
+                )
+                notification_exit.show()
                 exit()
         else:
-            print(f"{lineno()}: Line {line_index+1}/{len(lines_from_file)}:\n{answer}")
+            print(
+                f"{lineno()}: Line {line_index+1}/{len(lines_from_file)}:\n{answer}"
+            )
             break
 
     with open(
@@ -553,7 +601,9 @@ if __name__ == "__main__":
     # Get start line number as first command line argument
     if len(sys.argv) > 1:
         start_line_index = int(sys.argv[1]) - 1
-        print(f"{lineno()}: Command line argument: start from line {start_line_index+1}")
+        print(
+            f"{lineno()}: Command line argument: start from line {start_line_index+1}"
+        )
     elif config["start_from_line"] - 1 >= 0 and config[
         "start_from_line"
     ] - 1 < len(lines_from_file):
